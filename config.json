@@ -1,0 +1,90 @@
+[
+    {
+        "type": "RandomEvent",
+        "name": "web1",
+        "options": {
+            "mode": "structured",
+            "interval": 10.25
+        },
+        "upstreams": null
+    },
+    {
+        "type": "RandomEvent",
+        "name": "web2-raw",
+        "options": {
+            "mode": "raw",
+            "interval": 0.25
+        },
+        "upstreams": null
+    },
+    {
+        "type": "Extract",
+        "name": "extract-web-logs",
+        "options": {
+            "key": "_raw",
+            "expression": "(?<remote_ip>\\d+?\\.\\d+?\\.\\d+?\\.\\d+?) \\S* \\S* \\[(?<timestamp>\\S* \\S+?)\\] \"(?<action>GET|POST|HEAD|TRACE|PUT|DELETE|CONNECT) (?<path>\\S+?) (?<protocol>\\S+?)\" (?<status>\\d+?) (?<size>\\d+)( \\\"(?<referrer>\\S+?)\\\" \\\"(?<user_agent>\\S+?)\\\")?"
+        },
+        "upstreams": [
+            "web2-raw"
+        ]
+    },
+    {
+        "type": "Mux",
+        "name": "webs",
+        "upstreams": [
+            "web1",
+            "extract-web-logs"
+        ]
+    },
+    {
+        "type": "Filter",
+        "name": "errors",
+        "options":{
+            "key": "response-code",
+            "expression": "4\\d\\d"
+        },
+        "upstreams": [
+            "webs"
+        ]
+    },
+    {
+        "type": "Filter",
+        "name": "successes",
+        "options": {
+            "key": "response-code",
+            "expression": "2\\d\\d"
+        },
+        "upstreams": [
+            "webs"
+        ]
+    },
+    {
+        "type": "EnsureKeys",
+        "name": "ensure-error-key",
+        "options": {
+            "overwrite": true,
+            "attributes": {
+               "is-Error": true
+            }
+        },
+        "upstreams": [
+            "errors"
+        ]
+    },
+    {
+        "type": "Mux",
+        "name": "traffic",
+        "upstreams": [
+            "successes",
+            "ensure-error-key"
+        ]
+    },
+    {
+        "type": "Stdout",
+        "name": "out1",
+        "upstreams": [
+            "traffic",
+            "extract-web-logs"
+        ]
+    }
+]

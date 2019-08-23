@@ -11,11 +11,11 @@ namespace Hive.Plugins
         public string Key { get; set; }
         public Regex Expression { get; set; }
 
-        public Filter(string Name, System.Collections.Generic.Dictionary<string, dynamic> Configuration)
-        : base(Name, Configuration)
+        public Filter(string Name, Configuration Config)
+        : base(Name, Config)
         {
-            this.Key = Configuration.GetValueOrDefault("key", null);
-            var pattern = Configuration.GetValueOrDefault("expression", ".");
+            this.Key = Config.Options.GetValueOrDefault("key", null);
+            var pattern = Config.Options.GetValueOrDefault("expression", ".");
             this.Expression = new Regex(pattern);
         }
         public override void Process(Event e)

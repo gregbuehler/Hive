@@ -1,74 +1,69 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 using Hive.Core;
-using Hive.Plugins;
+using System;
+using CommandLine;
+using System.IO;
 
 namespace hive
 {
-    using Configuration = Dictionary<string, dynamic>;
-
     class Program
     {
-        static void Main(string[] args)
+        interface IOptions
         {
-            System.Console.WriteLine("Available Plugins:");
+            [Option('c', "config",
+                Required = false,
+                Default = "config.json",
+                HelpText = "Configuration file")]
+            String ConfigFile { get; set; }
+
+            [Option('p', "plugins",
+                Required = false,
+                Default = "./plugins",
+                HelpText = "Plugins directory")]
+            String PluginDirectory { get; set; }
+        }
+
+        [Verb("plugins", HelpText = "Display available plugins")]
+        class ListPluginsOptions : IOptions
+        {
+            public String ConfigFile { get; set; }
+            public String PluginDirectory  { get; set; }
+        }
+
+        [Verb("run", HelpText = "Run")]
+        class RunOptions : IOptions
+        {
+            public String ConfigFile { get; set; }
+            public String PluginDirectory  { get; set; }
+        }
+
+        static List<Configuration> LoadConfiguration(String path)
+        {
+            //var config = new List<Configuration>();
+            using (StreamReader file = File.OpenText(path))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                var config = (List<Configuration>)serializer.Deserialize(file, typeof(List<Configuration>));
+                return config;
+            }
+        }
+
+        static int ListPlugins(ListPluginsOptions opts)
+        {
             var plugins = PluginFactory.GetPlugins();
             foreach (var plugin in plugins)
             {
-                System.Console.WriteLine($"\t{plugin.Name}");
+                System.Console.WriteLine($"{plugin.Name}");
             }
 
-            var configs = new List<Configuration>{
-                new Configuration{
-                    { "type", "RandomEvent" },
-                    { "name", "web1" },
-                    { "interval", 0.25 },
-                    { "upstreams", null }
-                },
-                new Configuration{
-                    { "type", "RandomEvent" },
-                    { "name", "web2" },
-                    { "interval", 1.0 },
-                    { "upstreams", null }
-                },
-                new Configuration{
-                    { "type", "Mux" },
-                    { "name", "webs" },
-                    { "upstreams", new List<string>{ "web1", "web2" } }
-                },
-                new Configuration{
-                    { "type", "Filter" },
-                    { "name", "errors" },
-                    { "key", "response-code" },
-                    { "expression", @"4\d\d" },
-                    { "upstreams", new List<string>{ "webs" } }
-                },
-                new Configuration{
-                    { "type", "Filter" },
-                    { "name", "successes" },
-                    { "key", "response-code" },
-                    { "expression", @"2\d\d" },
-                    { "upstreams", new List<string>{ "webs" } }
-                },
-                new Configuration{
-                    { "type", "EnsureKeys" },
-                    { "name", "ensure-error-key"},
-                    { "Foo", new Dictionary<string, object>{{"is-error", true}} },
-                    { "upstreams", new List<string>{ "errors" } }
-                },
-                new Configuration{
-                    { "type", "Mux" },
-                    { "name", "traffic" },
-                    { "upstreams", new List<string>{ "successes", "ensure-error-key" } }
-                },
-                new Configuration{
-                    { "type", "Stdout" },
-                    { "name", "out1" },
-                    { "upstreams", new List<string>{ "traffic" } }
-                }
-            };
+            return 0;
+        }
 
+        static int Run(RunOptions opts)
+        {
+            var configs = LoadConfiguration(opts.ConfigFile);
 
-            System.Console.WriteLine("Loading Nodes from Configs");
             var nodes = new List<Plugin>();
             foreach (var config in configs)
             {
@@ -76,10 +71,9 @@ namespace hive
                 nodes.Add(node);
             }
 
-            System.Console.WriteLine("Connecting Upstreams");
             foreach (var node in nodes)
             {
-                var upstreams = node.Configuration.GetValueOrDefault("upstreams", null);
+                var upstreams = node.Configuration.Upstreams;
                 if (upstreams != null)
                 {
                     foreach (var target in upstreams)
@@ -90,8 +84,24 @@ namespace hive
                 }
             }
 
-            System.Console.WriteLine("#yolo");
+            foreach (var node in nodes)
+            {
+                node.Run();
+            }
+
             System.Console.ReadLine();
+
+            return 0;
+        }
+
+        static void Main(string[] args)
+        {
+            Parser.Default.ParseArguments<ListPluginsOptions, RunOptions>(args)
+                .MapResult(
+                    (ListPluginsOptions opts) => ListPlugins(opts),
+                    (RunOptions opts) => Run(opts),
+                    errs => 1
+                );
         }
     }
 }

@@ -6,8 +6,8 @@ namespace Hive.Plugins
     {
         public override string Descripton => "Combine multiple subscribers";
 
-        public Mux(string Name, System.Collections.Generic.Dictionary<string, dynamic> Configuration)
-        : base(Name, Configuration)
+        public Mux(string Name, Configuration Config)
+        : base(Name, Config)
         {
         }
 

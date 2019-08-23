@@ -7,27 +7,33 @@ using Hive.Plugins;
 
 namespace Hive.Plugins
 {
-    using Configuration = Dictionary<string, dynamic>;
     public class RandomEvent : Plugin
     {
         public override string Descripton => "Random web events";
         private Random prng;
         private Timer timer;
-        public RandomEvent(string Name, Configuration Configuration) : base(Name, Configuration)
-        {
-            double interval = Configuration.GetValueOrDefault("interval", 2.0);
 
+        private double interval;
+        private string mode;
+
+        private TimeSpan inf = System.Threading.Timeout.InfiniteTimeSpan;
+
+        public RandomEvent(string Name, Configuration Config) : base(Name, Config)
+        {
             this.prng = new Random();
+            this.mode = Config.Options.GetValueOrDefault("mode", "structured");
 
-            timer = new Timer(Run, null, TimeSpan.Zero, TimeSpan.FromSeconds(interval));
+            this.interval = Double.Parse(Config.Options.GetValueOrDefault("interval", "2.0").ToString());
+
+            timer = new Timer(Run, null, inf, TimeSpan.FromSeconds(interval));
         }
 
-        public void Dispose()
+        public override void Run()
         {
-            timer?.Dispose();
+            timer.Change(TimeSpan.Zero, TimeSpan.FromSeconds(interval));
         }
 
-        public override void Process(Event e)
+        private Event PopulateRaw(Event e)
         {
             string[] paths = {
                 "/",
@@ -39,7 +45,32 @@ namespace Hive.Plugins
                 "/login",
             };
 
-            e.Lineage.Add(this.Name);
+            var ipaddr = $"{prng.Next(1, 256)}.{prng.Next(1, 256)}.{prng.Next(1, 256)}.{prng.Next(1, 256)}";
+            var timeformat = "dd/MMM/yyyy:HH:mm:ss";
+            var timestamp = $"{DateTime.UtcNow.ToString(timeformat)} -0700";
+            var size = prng.Next(1024, 4096);
+            var path = paths[prng.Next(0, paths.Length)];
+            var response_code = (prng.Next(0, 10) >= 9) ? 404 : 200;
+
+            e.Data.Add("_raw", $"{ipaddr} - - [{timestamp}] \"GET {path} HTTP/1.0\" {response_code} {size}");
+
+            return e;
+        }
+
+        private Event PopulateStructured(Event e)
+        {
+            string[] paths = {
+                "/",
+                "/app/foo",
+                "/app/bar",
+                "/app/404",
+                "/about",
+                "/pricing",
+                "/login",
+            };
+
+            e.Data.Add("remote-addr", $"{prng.Next(1, 256)}.{prng.Next(1, 256)}.{prng.Next(1, 256)}.{prng.Next(1, 256)}");
+            e.Data.Add("size", prng.Next(1024, 4096));
             e.Data.Add("duration", prng.Next(50, 150));
             e.Data.Add("path", paths[prng.Next(0, paths.Length)]);
             e.Data.Add("request-id", Guid.NewGuid().ToString());
@@ -47,6 +78,25 @@ namespace Hive.Plugins
             e.Data.Add("feature-x", (prng.Next(0, 10) > 7));
             e.Data.Add("feature-y", (prng.Next(0, 10) > 7));
             e.Data.Add("feature-z", (prng.Next(0, 10) > 7));
+
+            return e;
+        }
+
+        public override void Process(Event e)
+        {
+            e.Lineage.Add(this.Name);
+
+            switch (mode)
+            {
+                case "structured":
+                    e = PopulateStructured(e);
+                    break;
+                case "raw":
+                    e = PopulateRaw(e);
+                    break;
+                default:
+                    throw new Exception($"Undefined mode '{mode}'");
+            }
 
             Emit(e);
         }

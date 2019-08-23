@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Hive.Core;
 
-namespace Hive.Plugins
+namespace Hive.Core
 {
-    using Configuration = Dictionary<string, dynamic>;
-
     public class PluginFactory
     {
         public static IEnumerable<Type> GetPlugins() {
@@ -20,16 +17,15 @@ namespace Hive.Plugins
 
         public static Plugin FromConfiguration(Configuration config)
         {
-            if (!config.ContainsKey("type"))
-                throw new System.Exception("No plugin type specified");
+            if (string.IsNullOrEmpty(config.Type))
+            {
+                throw new Exception($"Undefined node type");
+            }
 
             var types = PluginFactory.GetPlugins();
-            var type = config["type"];
-            var name = config.GetValueOrDefault("name", $"{type}-{Guid.NewGuid()}");
+            var t = types.First(x => x.Name == config.Type);
 
-            var t = types.First(x => x.Name == type);
-
-            return Activator.CreateInstance(t, name, config);
+            return (Plugin)Activator.CreateInstance(t, config.Name, config);
         }
     }
 }

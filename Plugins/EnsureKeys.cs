@@ -7,22 +7,38 @@ namespace Hive.Plugins
     {
         public override string Descripton => "Set event keys";
 
-        public Dictionary<string, object> Foo { get; set; }
+        public bool Overwrite { get; set; }
+        public Dictionary<string, dynamic> Attributes { get; set; }
 
-        public EnsureKeys(string Name, System.Collections.Generic.Dictionary<string, dynamic> Configuration)
-        : base(Name, Configuration)
+        public EnsureKeys(string Name, Configuration Config)
+        : base(Name, Config)
         {
-            this.Foo = Configuration.GetValueOrDefault("Foo", null);
+            this.Overwrite = Config.Options.GetValueOrDefault("overwrite", false);
+
+            var attrs = Config.Options.GetValueOrDefault("attributes", null);
+            this.Attributes = new Dictionary<string, dynamic>();
+            foreach (var attr in attrs)
+            {
+                this.Attributes.Add(attr.Name, attr.Value);
+            }
         }
 
         public override void Process(Event e)
         {
-            foreach (var key in Foo.Keys)
+            foreach (var key in Attributes.Keys)
             {
                 if (!e.Data.ContainsKey(key))
                 {
-                    e.Data.Add(key, Foo[key]);
+                    e.Data.Add(key, Attributes[key]);
                 }
+                else
+                {
+                    if (Overwrite)
+                    {
+                        e.Data[key] = Attributes[key];
+                    }
+                }
+
             }
 
             e.Lineage.Add(Name);
