@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Hive
@@ -11,6 +12,7 @@ namespace Hive
 
         public List<string> Lineage { get; set; }
 
+        [DebuggerStepThroughAttribute]
         public Event()
         {
             Id = Guid.NewGuid().ToString();
@@ -18,6 +20,7 @@ namespace Hive
             Lineage = new List<string>();
         }
 
+        [DebuggerStepThroughAttribute]
         public override string ToString()
         {
             var lineage = string.Join(',', this.Lineage.ToArray());

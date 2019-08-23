@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Hive.Core
 {
@@ -19,6 +20,7 @@ namespace Hive.Core
         }
 
         // IObservable
+        [DebuggerStepThroughAttribute]
         public IDisposable Subscribe(IObserver<Event> observer)
         {
             if (!observers.Contains(observer))
@@ -28,12 +30,19 @@ namespace Hive.Core
         }
 
         // IObserver
+        [DebuggerStepThroughAttribute]
         public virtual void OnNext(Event e)
         {
             Process(e);
         }
+
+        [DebuggerStepThroughAttribute]
         public virtual void OnError(Exception e) {}
+
+        [DebuggerStepThroughAttribute]
         public virtual void OnCompleted() {}
+
+        [DebuggerStepThroughAttribute]
         protected void Emit(Event e)
         {
             foreach (var observer in observers)

@@ -25,7 +25,7 @@ namespace Hive.Plugins
 
             this.interval = Double.Parse(Config.Options.GetValueOrDefault("interval", "2.0").ToString());
 
-            timer = new Timer(Run, null, inf, TimeSpan.FromSeconds(interval));
+            timer = new Timer(this.DoWork, null, inf, TimeSpan.FromSeconds(interval));
         }
 
         public override void Run()
@@ -101,7 +101,7 @@ namespace Hive.Plugins
             Emit(e);
         }
 
-        private void Run(object state)
+        private void DoWork(object state)
         {
             Event e = new Event();
             Process(e);

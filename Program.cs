@@ -4,40 +4,13 @@ using Hive.Core;
 using System;
 using CommandLine;
 using System.IO;
+using System.Text.RegularExpressions;
+using Hive.Options;
 
-namespace hive
+namespace Hive
 {
     class Program
     {
-        interface IOptions
-        {
-            [Option('c', "config",
-                Required = false,
-                Default = "config.json",
-                HelpText = "Configuration file")]
-            String ConfigFile { get; set; }
-
-            [Option('p', "plugins",
-                Required = false,
-                Default = "./plugins",
-                HelpText = "Plugins directory")]
-            String PluginDirectory { get; set; }
-        }
-
-        [Verb("plugins", HelpText = "Display available plugins")]
-        class ListPluginsOptions : IOptions
-        {
-            public String ConfigFile { get; set; }
-            public String PluginDirectory  { get; set; }
-        }
-
-        [Verb("run", HelpText = "Run")]
-        class RunOptions : IOptions
-        {
-            public String ConfigFile { get; set; }
-            public String PluginDirectory  { get; set; }
-        }
-
         static List<Configuration> LoadConfiguration(String path)
         {
             //var config = new List<Configuration>();
@@ -47,6 +20,20 @@ namespace hive
                 var config = (List<Configuration>)serializer.Deserialize(file, typeof(List<Configuration>));
                 return config;
             }
+        }
+
+        static bool ValidateConfiguration(List<Configuration> configs)
+        {
+            foreach(var config in configs)
+            {
+                if (configs.FindAll(c => c.Name == config.Name).Count > 1)
+                {
+                    System.Console.WriteLine($"Configuration '{config.Name}' has multiple definitions");
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         static int ListPlugins(ListPluginsOptions opts)
@@ -60,10 +47,24 @@ namespace hive
             return 0;
         }
 
+        static int Validate(ValidateOptions opts)
+        {
+            var configs = LoadConfiguration(opts.ConfigFile);
+            if (ValidateConfiguration(configs))
+            {
+                return 0;
+            }
+
+            return 2;
+        }
+
         static int Run(RunOptions opts)
         {
             var configs = LoadConfiguration(opts.ConfigFile);
-
+            if (!ValidateConfiguration(configs))
+            {
+                return 2;
+            }
             var nodes = new List<Plugin>();
             foreach (var config in configs)
             {
@@ -76,10 +77,18 @@ namespace hive
                 var upstreams = node.Configuration.Upstreams;
                 if (upstreams != null)
                 {
+                    Console.WriteLine($"finding upstreams for {node.Name}");
                     foreach (var target in upstreams)
                     {
-                        var upstream = nodes.Find(n => n.Name == target);
-                        upstream.Subscribe(node);
+                        if (target == null) continue;
+
+                        var pattern = $"^{target.Replace(@"\.", @"\.").Replace(@"\*", @".*").Replace(@"\?", ".") }$";
+                        var expr = new Regex(pattern);
+                        foreach(var upstream in nodes.FindAll(n => expr.IsMatch(n.Name)))
+                        {
+                            if (node == upstream) continue;
+                            upstream.Subscribe(node);
+                        }
                     }
                 }
             }
@@ -96,9 +105,10 @@ namespace hive
 
         static void Main(string[] args)
         {
-            Parser.Default.ParseArguments<ListPluginsOptions, RunOptions>(args)
+            Parser.Default.ParseArguments<ListPluginsOptions, ValidateOptions, RunOptions>(args)
                 .MapResult(
                     (ListPluginsOptions opts) => ListPlugins(opts),
+                    (ValidateOptions opts) => Validate(opts),
                     (RunOptions opts) => Run(opts),
                     errs => 1
                 );

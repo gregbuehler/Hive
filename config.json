@@ -1,90 +1,52 @@
 [
     {
         "type": "RandomEvent",
-        "name": "web1",
+        "name": "logs.web.access.1",
         "options": {
             "mode": "structured",
-            "interval": 10.25
+            "interval": 1.00
         },
         "upstreams": null
     },
     {
         "type": "RandomEvent",
-        "name": "web2-raw",
+        "name": "logs.web.access.2",
         "options": {
-            "mode": "raw",
-            "interval": 0.25
+            "mode": "structured",
+            "interval": 1.00
         },
         "upstreams": null
     },
     {
-        "type": "Extract",
-        "name": "extract-web-logs",
+        "type": "RandomEvent",
+        "name": "logs.web.access.3",
         "options": {
-            "key": "_raw",
-            "expression": "(?<remote_ip>\\d+?\\.\\d+?\\.\\d+?\\.\\d+?) \\S* \\S* \\[(?<timestamp>\\S* \\S+?)\\] \"(?<action>GET|POST|HEAD|TRACE|PUT|DELETE|CONNECT) (?<path>\\S+?) (?<protocol>\\S+?)\" (?<status>\\d+?) (?<size>\\d+)( \\\"(?<referrer>\\S+?)\\\" \\\"(?<user_agent>\\S+?)\\\")?"
+            "mode": "structured",
+            "interval": 1.00
         },
-        "upstreams": [
-            "web2-raw"
-        ]
+        "upstreams": null
     },
     {
-        "type": "Mux",
-        "name": "webs",
-        "upstreams": [
-            "web1",
-            "extract-web-logs"
-        ]
-    },
-    {
-        "type": "Filter",
-        "name": "errors",
-        "options":{
-            "key": "response-code",
-            "expression": "4\\d\\d"
-        },
-        "upstreams": [
-            "webs"
-        ]
-    },
-    {
-        "type": "Filter",
-        "name": "successes",
+        "type": "RandomEvent",
+        "name": "logs.web.access.4",
         "options": {
-            "key": "response-code",
-            "expression": "2\\d\\d"
+            "mode": "structured",
+            "interval": 1.00
         },
-        "upstreams": [
-            "webs"
-        ]
-    },
-    {
-        "type": "EnsureKeys",
-        "name": "ensure-error-key",
-        "options": {
-            "overwrite": true,
-            "attributes": {
-               "is-Error": true
-            }
-        },
-        "upstreams": [
-            "errors"
-        ]
+        "upstreams": null
     },
     {
         "type": "Mux",
         "name": "traffic",
         "upstreams": [
-            "successes",
-            "ensure-error-key"
+            "logs.web.access.*"
         ]
     },
     {
         "type": "Stdout",
         "name": "out1",
         "upstreams": [
-            "traffic",
-            "extract-web-logs"
+            "traffic"
         ]
     }
 ]
