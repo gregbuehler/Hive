@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-
-
-namespace Hive.Plugins
+namespace Hive.Core
 {
     using Configuration = Dictionary<string, dynamic>;
 

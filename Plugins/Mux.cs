@@ -1,3 +1,5 @@
+using Hive.Core;
+
 namespace Hive.Plugins
 {
     public class Mux : Plugin

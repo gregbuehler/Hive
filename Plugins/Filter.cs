@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Hive.Core;
 
 namespace Hive.Plugins
 {
@@ -20,7 +21,6 @@ namespace Hive.Plugins
         public override void Process(Event e)
         {
             var value = e.Data.GetValueOrDefault(Key, "");
-            System.Console.WriteLine($"Filter; key={Key}\tvalue={value}");
             if (Expression.IsMatch(e.Data.GetValueOrDefault(Key, "").ToString()))
             {
                 e.Lineage.Add(Name);

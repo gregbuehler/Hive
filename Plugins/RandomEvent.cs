@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Hive.Core;
 using Hive.Plugins;
 
 namespace Hive.Plugins

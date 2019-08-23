@@ -1,6 +1,6 @@
 using System;
 
-namespace Hive.Plugins
+namespace Hive.Core
 {
     public interface IPlugin
     {

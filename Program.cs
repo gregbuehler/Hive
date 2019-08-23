@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Hive.Core;
 using Hive.Plugins;
 
 namespace hive
@@ -20,18 +21,18 @@ namespace hive
                 new Configuration{
                     { "type", "RandomEvent" },
                     { "name", "web1" },
-                    { "interval", 1 },
+                    { "interval", 0.25 },
                     { "upstreams", null }
                 },
                 new Configuration{
                     { "type", "RandomEvent" },
                     { "name", "web2" },
-                    { "interval", 2 },
+                    { "interval", 1.0 },
                     { "upstreams", null }
                 },
                 new Configuration{
                     { "type", "Mux" },
-                    { "name", "mux" },
+                    { "name", "webs" },
                     { "upstreams", new List<string>{ "web1", "web2" } }
                 },
                 new Configuration{
@@ -39,14 +40,33 @@ namespace hive
                     { "name", "errors" },
                     { "key", "response-code" },
                     { "expression", @"4\d\d" },
-                    { "upstreams", new List<string>{ "mux" } }
+                    { "upstreams", new List<string>{ "webs" } }
+                },
+                new Configuration{
+                    { "type", "Filter" },
+                    { "name", "successes" },
+                    { "key", "response-code" },
+                    { "expression", @"2\d\d" },
+                    { "upstreams", new List<string>{ "webs" } }
+                },
+                new Configuration{
+                    { "type", "EnsureKeys" },
+                    { "name", "ensure-error-key"},
+                    { "Foo", new Dictionary<string, object>{{"is-error", true}} },
+                    { "upstreams", new List<string>{ "errors" } }
+                },
+                new Configuration{
+                    { "type", "Mux" },
+                    { "name", "traffic" },
+                    { "upstreams", new List<string>{ "successes", "ensure-error-key" } }
                 },
                 new Configuration{
                     { "type", "Stdout" },
                     { "name", "out1" },
-                    { "upstreams", new List<string>{ "errors" } }
+                    { "upstreams", new List<string>{ "traffic" } }
                 }
             };
+
 
             System.Console.WriteLine("Loading Nodes from Configs");
             var nodes = new List<Plugin>();
