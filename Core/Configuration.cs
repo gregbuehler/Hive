@@ -12,9 +12,9 @@ namespace Hive.Core
         public string Name { get; set; }
 
         [JsonProperty("options")]
-        public Dictionary<string, dynamic> Options { get; set; }
+        public Dictionary<string, dynamic> Options { get; set; } = new Dictionary<string, dynamic>();
 
         [JsonProperty("upstreams")]
-        public List<string> Upstreams { get; set; }
+        public List<string> Upstreams { get; set; } = new List<string>();
     }
 }

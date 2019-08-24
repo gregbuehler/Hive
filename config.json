@@ -1,52 +1,24 @@
 [
     {
-        "type": "RandomEvent",
-        "name": "logs.web.access.1",
-        "options": {
-            "mode": "structured",
-            "interval": 1.00
-        },
-        "upstreams": null
+        "type": "WebListener",
+        "name": "ingest"
     },
     {
-        "type": "RandomEvent",
-        "name": "logs.web.access.2",
+        "type": "Explode",
+        "name": "filter",
         "options": {
-            "mode": "structured",
-            "interval": 1.00
+            "key": "_raw",
+            "mode": "json"
         },
-        "upstreams": null
-    },
-    {
-        "type": "RandomEvent",
-        "name": "logs.web.access.3",
-        "options": {
-            "mode": "structured",
-            "interval": 1.00
-        },
-        "upstreams": null
-    },
-    {
-        "type": "RandomEvent",
-        "name": "logs.web.access.4",
-        "options": {
-            "mode": "structured",
-            "interval": 1.00
-        },
-        "upstreams": null
-    },
-    {
-        "type": "Mux",
-        "name": "traffic",
         "upstreams": [
-            "logs.web.access.*"
+            "ingest"
         ]
     },
     {
         "type": "Stdout",
         "name": "out1",
         "upstreams": [
-            "traffic"
+            "filter"
         ]
     }
 ]

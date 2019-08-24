@@ -77,7 +77,6 @@ namespace Hive
                 var upstreams = node.Configuration.Upstreams;
                 if (upstreams != null)
                 {
-                    Console.WriteLine($"finding upstreams for {node.Name}");
                     foreach (var target in upstreams)
                     {
                         if (target == null) continue;
@@ -95,9 +94,10 @@ namespace Hive
 
             foreach (var node in nodes)
             {
+                System.Console.WriteLine($"Starting {node.Name}");
                 node.Run();
             }
-
+            System.Console.WriteLine("Running!");
             System.Console.ReadLine();
 
             return 0;
